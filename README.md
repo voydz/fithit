@@ -1,14 +1,14 @@
 # fithit
 
-**CLI zum Parsen und Durchsuchen von Apple Fitness+ Workouts.**  
-Schnell, deterministisch und ideal für Skripte, Notebooks oder eine persönliche Trainings-DB.
+**CLI for parsing and searching Apple Fitness+ workouts.**  
+Fast, deterministic, and ideal for scripts, notebooks, or a personal training database.
 
 ## Highlights
 
-- `.dtable` → `workouts.json` + `summary.json` in einem Schritt
-- Suche wie im Original-Script (`filter_workouts.py`), aber als CLI
-- JSON-Ausgabe für Automationen und Skills
-- Validierung für stabile öffentliche Schemata
+- `.dtable` → `workouts.json` + `summary.json` in one step
+- Search like the original script (`filter_workouts.py`), but as a CLI
+- JSON output for automations and skills
+- Validation for stable public schemas
 
 ## Quickstart (dev)
 
@@ -17,9 +17,9 @@ make setup
 uv run fithit --help
 ```
 
-## Datenbank
+## Database
 
-Standard-Pfad:
+Default path:
 
 - `$XDG_DATA_HOME/fithit/workouts.json` (falls back to the standard XDG data dir)
 
@@ -29,13 +29,13 @@ Override:
 
 ## Commands
 
-- `fithit parse <dtable>`: extrahiert `content.json` aus der `.dtable` (ZIP) und schreibt `workouts.json` + `summary.json`
-- `fithit search ...`: filtert Workouts 1:1 wie das ursprüngliche Script `filter_workouts.py`
-- `fithit info`: Live-Statistiken aus `workouts.json`
-- `fithit validate`: Schema-Checks für stabile öffentliche Felder
-- `fithit fetch`: lädt `workouts.json` via URL (z. B. SeaTable External Link)
+- `fithit parse <dtable>`: extracts `content.json` from the `.dtable` (ZIP) and writes `workouts.json` + `summary.json`
+- `fithit search ...`: filters workouts 1:1 like the original script `filter_workouts.py`
+- `fithit info`: live stats from `workouts.json`
+- `fithit validate`: schema checks for stable public fields
+- `fithit fetch`: downloads `workouts.json` via URL (e.g. SeaTable External Link)
 
-## Beispiele
+## Examples
 
 ```bash
 uv run fithit --help
@@ -64,26 +64,26 @@ make test
 
 ## Homebrew (Tap)
 
-Die Formel liegt im Tap unter `homebrew-tap/Formula/fithit.rb`.  
-Vor dem Publish bitte `homepage`, `url` und `sha256` anpassen.
+The formula lives in the tap at `homebrew-tap/Formula/fithit.rb`.  
+Before publishing, update `homepage`, `url`, and `sha256`.
 
 ## Skill Integration
 
-Der Fitness-Coach Skill sollte ausschließlich das Binary aufrufen:
+The Fitness Coach skill should only call the binary:
 
-- `fithit info` (DB vorhanden?)
+- `fithit info` (DB present?)
 - `fithit search ... --format json`
 
 ## Schema (workouts.json)
 
-Minimaler, stabiler public schema:
+Minimal, stable public schema:
 
-- Pflichtfelder: `category`, `duration`, `trainer` (Strings, nicht leer)
-- Mindestens eines von: `name` oder `description` (String)
+- Required fields: `category`, `duration`, `trainer` (strings, not empty)
+- At least one of: `name` or `description` (string)
 
-Optionale Felder (String oder Liste von Strings, je nach Feld):
+Optional fields (string or list of strings, depending on field):
 
 - `equipment`, `body_focus`, `flow_style`, `dumbbells`, `muscle_groups`, `move_types`, `strikes`
 - `date`, `episode`, `music`, `link`, `playlist`, `detailed_moves`, `notes`, `format`
 - `workout_details`, `resistance_band`, `theme`, `topic`, `workout_type`
-- `prenatal` (Boolean)
+- `prenatal` (boolean)
