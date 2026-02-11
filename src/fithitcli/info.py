@@ -11,6 +11,7 @@ from rich.console import Console
 from rich.table import Table
 
 from .schema import SCHEMA_VERSION
+
 console = Console()
 
 
@@ -18,7 +19,13 @@ def _default_db_path() -> Path:
     env = os.environ.get("FITHIT_DB_PATH")
     if env:
         return Path(env).expanduser()
-    return Path.home() / ".local" / "share" / "fithit" / "workouts.json"
+    xdg_data_home = os.environ.get("XDG_DATA_HOME")
+    base = (
+        Path(xdg_data_home).expanduser()
+        if xdg_data_home
+        else (Path.home() / ".local" / "share")
+    )
+    return base / "fithit" / "workouts.json"
 
 
 def _load(db_path: Path) -> list[dict[str, Any]]:
@@ -34,11 +41,13 @@ def _load(db_path: Path) -> list[dict[str, Any]]:
 def _compute_summary(workouts: list[dict[str, Any]]) -> dict[str, Any]:
     categories = Counter(str(w.get("category")) for w in workouts if w.get("category"))
     trainers = sorted(
-        {w.get("trainer") for w in workouts if isinstance(w.get("trainer"), str) and w.get("trainer")}
+        {
+            w.get("trainer")
+            for w in workouts
+            if isinstance(w.get("trainer"), str) and w.get("trainer")
+        }
     )
-    durations = sorted(
-        {w.get("duration") for w in workouts if w.get("duration")}
-    )
+    durations = sorted({w.get("duration") for w in workouts if w.get("duration")})
     return {
         "schema_version": SCHEMA_VERSION,
         "total_workouts": len(workouts),
@@ -72,5 +81,9 @@ def info_cmd(*, format: str = "compact") -> None:
     console.print(cat_table)
 
     console.print()
-    console.print(f"Trainer ({len(summary['trainers'])}): {', '.join(summary['trainers'])}")
-    console.print(f"Durations ({len(summary['durations'])}): {', '.join(summary['durations'])}")
+    console.print(
+        f"Trainer ({len(summary['trainers'])}): {', '.join(summary['trainers'])}"
+    )
+    console.print(
+        f"Durations ({len(summary['durations'])}): {', '.join(summary['durations'])}"
+    )

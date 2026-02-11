@@ -18,14 +18,20 @@ def _default_db_path() -> Path:
     env = os.environ.get("FITHIT_DB_PATH")
     if env:
         return Path(env).expanduser()
-    return Path.home() / ".local" / "share" / "fithit" / "workouts.json"
+    xdg_data_home = os.environ.get("XDG_DATA_HOME")
+    base = (
+        Path(xdg_data_home).expanduser()
+        if xdg_data_home
+        else (Path.home() / ".local" / "share")
+    )
+    return base / "fithit" / "workouts.json"
 
 
 def load_workouts(db_path: Path | None = None) -> list[dict[str, Any]]:
     path = db_path or _default_db_path()
     if not path.exists():
         raise typer.BadParameter(
-            f"Datenbank nicht gefunden: {path}\n" 
+            f"Datenbank nicht gefunden: {path}\n"
             "Tipp: `fithit parse <dtable>` ausführen oder FITHIT_DB_PATH setzen."
         )
     with path.open("r", encoding="utf-8") as f:
@@ -71,7 +77,10 @@ def _parse_minutes(value: Any) -> int | None:
 
 def matches(workout: dict[str, Any], args: SearchArgs) -> bool:
     # Category filter
-    if args.category and str(workout.get("category", "")).lower() != args.category.lower():
+    if (
+        args.category
+        and str(workout.get("category", "")).lower() != args.category.lower()
+    ):
         return False
     if args.categories:
         cats = [c.strip().lower() for c in args.categories.split(",")]
@@ -79,7 +88,10 @@ def matches(workout: dict[str, Any], args: SearchArgs) -> bool:
             return False
 
     # Duration filter
-    if args.duration and str(workout.get("duration", "")).lower() != args.duration.lower():
+    if (
+        args.duration
+        and str(workout.get("duration", "")).lower() != args.duration.lower()
+    ):
         return False
 
     # Max duration filter
@@ -120,7 +132,9 @@ def matches(workout: dict[str, Any], args: SearchArgs) -> bool:
 
     # Text search in description
     if args.search:
-        desc = (str(workout.get("description", "")) + " " + str(workout.get("name", ""))).lower()
+        desc = (
+            str(workout.get("description", "")) + " " + str(workout.get("name", ""))
+        ).lower()
         if args.search.lower() not in desc:
             return False
 
@@ -141,7 +155,8 @@ def _compact_table(results: Iterable[dict[str, Any]]) -> Table:
             str(w.get("duration", "?")),
             str(w.get("trainer", "?")),
             str(w.get("episode", "")),
-            str(w.get("name", "")) or (str(w.get("description", ""))[:80] if w.get("description") else ""),
+            str(w.get("name", ""))
+            or (str(w.get("description", ""))[:80] if w.get("description") else ""),
         )
     return table
 
@@ -199,7 +214,9 @@ def search_cmd(
         equip = w.get("equipment")
         if link or equip:
             console.print()
-            console.print(f"[bold]{w.get('category','?')}[/bold] {w.get('duration','?')} — {w.get('trainer','?')} (Ep {w.get('episode','')})")
+            console.print(
+                f"[bold]{w.get('category', '?')}[/bold] {w.get('duration', '?')} — {w.get('trainer', '?')} (Ep {w.get('episode', '')})"
+            )
             if equip:
                 console.print(f"  Equipment: {equip}")
             if link:

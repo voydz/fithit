@@ -29,7 +29,13 @@ def _default_db_path() -> Path:
     env = os.environ.get("FITHIT_DB_PATH")
     if env:
         return Path(env).expanduser()
-    return Path.home() / ".local" / "share" / "fithit" / "workouts.json"
+    xdg_data_home = os.environ.get("XDG_DATA_HOME")
+    base = (
+        Path(xdg_data_home).expanduser()
+        if xdg_data_home
+        else (Path.home() / ".local" / "share")
+    )
+    return base / "fithit" / "workouts.json"
 
 
 def build_option_map(columns: list[dict[str, Any]]):
@@ -69,7 +75,12 @@ def extract_text(val: Any):
     return val
 
 
-def parse_row(row: dict[str, Any], col_map: dict[str, str], opt_map: dict[str, str], table_name: str):
+def parse_row(
+    row: dict[str, Any],
+    col_map: dict[str, str],
+    opt_map: dict[str, str],
+    table_name: str,
+):
     """Parse a single row into a clean workout dict."""
     mapped: dict[str, Any] = {}
     for key, val in row.items():
@@ -77,7 +88,11 @@ def parse_row(row: dict[str, Any], col_map: dict[str, str], opt_map: dict[str, s
             continue
         col_name = col_map.get(key, key)
         # Skip internal/test columns
-        if col_name.startswith("~") or col_name.startswith("TEST") or "(copy)" in col_name:
+        if (
+            col_name.startswith("~")
+            or col_name.startswith("TEST")
+            or "(copy)" in col_name
+        ):
             continue
         mapped[col_name] = val
 
@@ -135,19 +150,27 @@ def parse_row(row: dict[str, Any], col_map: dict[str, str], opt_map: dict[str, s
     # Category-specific fields
     # Strength
     if "Body Focus" in mapped:
-        workout["body_focus"] = resolve_value(mapped["Body Focus"], opt_map, "Body Focus")
+        workout["body_focus"] = resolve_value(
+            mapped["Body Focus"], opt_map, "Body Focus"
+        )
     if "Equipment" in mapped:
         workout["equipment"] = resolve_value(mapped["Equipment"], opt_map, "Equipment")
     if "Dumbbells" in mapped:
         workout["dumbbells"] = resolve_value(mapped["Dumbbells"], opt_map, "Dumbbells")
     if "Muscle Groups" in mapped:
-        workout["muscle_groups"] = resolve_value(mapped["Muscle Groups"], opt_map, "Muscle Groups")
+        workout["muscle_groups"] = resolve_value(
+            mapped["Muscle Groups"], opt_map, "Muscle Groups"
+        )
     if "Types of Moves" in mapped:
-        workout["move_types"] = resolve_value(mapped["Types of Moves"], opt_map, "Types of Moves")
+        workout["move_types"] = resolve_value(
+            mapped["Types of Moves"], opt_map, "Types of Moves"
+        )
 
     # Yoga
     if "Flow Style" in mapped:
-        workout["flow_style"] = resolve_value(mapped["Flow Style"], opt_map, "Flow Style")
+        workout["flow_style"] = resolve_value(
+            mapped["Flow Style"], opt_map, "Flow Style"
+        )
 
     # HIIT / Kickboxing
     if "Workout Details" in mapped:
@@ -157,7 +180,9 @@ def parse_row(row: dict[str, Any], col_map: dict[str, str], opt_map: dict[str, s
 
     # Pilates
     if "Resistance Band" in mapped:
-        workout["resistance_band"] = resolve_value(mapped["Resistance Band"], opt_map, "Resistance Band")
+        workout["resistance_band"] = resolve_value(
+            mapped["Resistance Band"], opt_map, "Resistance Band"
+        )
 
     # Meditation
     if "Theme" in mapped:
@@ -171,7 +196,9 @@ def parse_row(row: dict[str, Any], col_map: dict[str, str], opt_map: dict[str, s
 
     # Workout Type (sub-type within category)
     if "Workout Type" in mapped:
-        workout["workout_type"] = resolve_value(mapped["Workout Type"], opt_map, "Workout Type")
+        workout["workout_type"] = resolve_value(
+            mapped["Workout Type"], opt_map, "Workout Type"
+        )
 
     # Name
     if "Name" in mapped:
@@ -221,7 +248,9 @@ def parse_content(*, content: dict[str, Any], source: str, output: str | None) -
         "trainers": sorted(
             set(w["trainer"] for w in all_workouts if isinstance(w.get("trainer"), str))
         ),
-        "durations": sorted(set(w["duration"] for w in all_workouts if w.get("duration"))),
+        "durations": sorted(
+            set(w["duration"] for w in all_workouts if w.get("duration"))
+        ),
     }
 
     summary_path = out_path.parent / "summary.json"

@@ -18,7 +18,13 @@ def _default_db_path() -> Path:
     env = os.environ.get("FITHIT_DB_PATH")
     if env:
         return Path(env).expanduser()
-    return Path.home() / ".local" / "share" / "fithit" / "workouts.json"
+    xdg_data_home = os.environ.get("XDG_DATA_HOME")
+    base = (
+        Path(xdg_data_home).expanduser()
+        if xdg_data_home
+        else (Path.home() / ".local" / "share")
+    )
+    return base / "fithit" / "workouts.json"
 
 
 def _load(db_path: Path) -> list[dict[str, Any]]:
@@ -46,30 +52,63 @@ def _is_str_or_str_list(value: Any) -> bool:
     return False
 
 
-def _validate_workout(workout: Any, index: int) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def _validate_workout(
+    workout: Any, index: int
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     errors: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
 
     if not isinstance(workout, dict):
-        errors.append({"index": index, "field": "*", "issue": "workout ist kein Objekt"})
+        errors.append(
+            {"index": index, "field": "*", "issue": "workout ist kein Objekt"}
+        )
         return errors, warnings
 
     for field in REQUIRED_FIELDS:
         if not _is_non_empty_str(workout.get(field)):
-            errors.append({"index": index, "field": field, "issue": "fehlend oder leer"})
+            errors.append(
+                {"index": index, "field": field, "issue": "fehlend oder leer"}
+            )
 
-    if not (_is_non_empty_str(workout.get("name")) or _is_non_empty_str(workout.get("description"))):
-        warnings.append({"index": index, "field": "name/description", "issue": "keine Beschreibung oder Name"})
+    if not (
+        _is_non_empty_str(workout.get("name"))
+        or _is_non_empty_str(workout.get("description"))
+    ):
+        warnings.append(
+            {
+                "index": index,
+                "field": "name/description",
+                "issue": "keine Beschreibung oder Name",
+            }
+        )
 
-    for field in ("equipment", "body_focus", "flow_style", "dumbbells", "muscle_groups", "move_types", "strikes"):
+    for field in (
+        "equipment",
+        "body_focus",
+        "flow_style",
+        "dumbbells",
+        "muscle_groups",
+        "move_types",
+        "strikes",
+    ):
         if field in workout and not _is_str_or_str_list(workout[field]):
-            errors.append({"index": index, "field": field, "issue": "muss string oder liste von strings sein"})
+            errors.append(
+                {
+                    "index": index,
+                    "field": field,
+                    "issue": "muss string oder liste von strings sein",
+                }
+            )
 
     if "episode" in workout and not isinstance(workout["episode"], (str, int)):
-        errors.append({"index": index, "field": "episode", "issue": "muss string oder int sein"})
+        errors.append(
+            {"index": index, "field": "episode", "issue": "muss string oder int sein"}
+        )
 
     if "prenatal" in workout and not isinstance(workout["prenatal"], bool):
-        errors.append({"index": index, "field": "prenatal", "issue": "muss boolean sein"})
+        errors.append(
+            {"index": index, "field": "prenatal", "issue": "muss boolean sein"}
+        )
 
     return errors, warnings
 

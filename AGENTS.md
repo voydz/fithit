@@ -11,7 +11,7 @@ Dieses Repo ist eine kleine Typer/Rich-CLI zum Parsen und Durchsuchen einer Appl
 
 ## Datenbank-Pfad
 
-Standard: `~/.local/share/fithit/workouts.json`
+Standard: `$XDG_DATA_HOME/fithit/workouts.json` (falls back to the standard XDG data dir)
 
 Überschreiben via Environment:
 

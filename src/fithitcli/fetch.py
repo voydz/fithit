@@ -15,13 +15,17 @@ from .parse import parse_content
 
 console = Console()
 
-DEFAULT_SEATABLE_EXTERNAL_LINK = "https://cloud.seatable.io/dtable/external-links/d08506897d274835bdab/"
+DEFAULT_SEATABLE_EXTERNAL_LINK = (
+    "https://cloud.seatable.io/dtable/external-links/d08506897d274835bdab/"
+)
 
 
 def _build_download_url(url: str) -> str:
     parsed = urllib.parse.urlparse(url)
     if not parsed.scheme or not parsed.netloc:
-        raise typer.BadParameter("Ungültige URL. Bitte eine vollständige SeaTable-URL angeben.")
+        raise typer.BadParameter(
+            "Ungültige URL. Bitte eine vollständige SeaTable-URL angeben."
+        )
 
     if "download-zip" in parsed.path:
         return url
@@ -36,7 +40,9 @@ def _build_download_url(url: str) -> str:
         raise typer.BadParameter("External-Link-Token fehlt in der URL.")
 
     token = parts[idx + 1]
-    return f"{parsed.scheme}://{parsed.netloc}/dtable/external-links/{token}/download-zip/"
+    return (
+        f"{parsed.scheme}://{parsed.netloc}/dtable/external-links/{token}/download-zip/"
+    )
 
 
 def _download_dtable(download_url: str, timeout: int = 60) -> bytes:
@@ -45,7 +51,9 @@ def _download_dtable(download_url: str, timeout: int = 60) -> bytes:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = resp.read()
     except urllib.error.HTTPError as exc:
-        raise typer.BadParameter(f"Download fehlgeschlagen ({exc.code}): {exc.reason}") from exc
+        raise typer.BadParameter(
+            f"Download fehlgeschlagen ({exc.code}): {exc.reason}"
+        ) from exc
     except urllib.error.URLError as exc:
         raise typer.BadParameter(f"Download fehlgeschlagen: {exc.reason}") from exc
 

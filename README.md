@@ -1,30 +1,39 @@
 # fithit
 
-CLI zum Parsen (aus `.dtable`) und Durchsuchen von Apple Fitness+ Workouts.
+**CLI zum Parsen und Durchsuchen von Apple Fitness+ Workouts.**  
+Schnell, deterministisch und ideal für Skripte, Notebooks oder eine persönliche Trainings-DB.
 
-## Installation (dev)
+## Highlights
+
+- `.dtable` → `workouts.json` + `summary.json` in einem Schritt
+- Suche wie im Original-Script (`filter_workouts.py`), aber als CLI
+- JSON-Ausgabe für Automationen und Skills
+- Validierung für stabile öffentliche Schemata
+
+## Quickstart (dev)
 
 ```bash
-cd ~/Code/tinkering/fithit
 make setup
+uv run fithit --help
 ```
 
 ## Datenbank
 
-Standard-Pfad (XDG-konform):
+Standard-Pfad:
 
-- `~/.local/share/fithit/workouts.json`
+- `$XDG_DATA_HOME/fithit/workouts.json` (falls back to the standard XDG data dir)
 
 Override:
 
 - `FITHIT_DB_PATH=/path/to/workouts.json`
 
-Für initiales Testen:
+## Commands
 
-```bash
-mkdir -p ~/.local/share/fithit
-cp ~/lumi/skills/fitness-coach/data/workouts.json ~/.local/share/fithit/workouts.json
-```
+- `fithit parse <dtable>`: extrahiert `content.json` aus der `.dtable` (ZIP) und schreibt `workouts.json` + `summary.json`
+- `fithit search ...`: filtert Workouts 1:1 wie das ursprüngliche Script `filter_workouts.py`
+- `fithit info`: Live-Statistiken aus `workouts.json`
+- `fithit validate`: Schema-Checks für stabile öffentliche Felder
+- `fithit fetch`: lädt `workouts.json` via URL (z. B. SeaTable External Link)
 
 ## Beispiele
 
@@ -47,9 +56,16 @@ uv run fithit validate
 uv run fithit validate --format json
 ```
 
+## Tests
+
+```bash
+make test
+```
+
 ## Homebrew (Tap)
 
-Die Formel liegt im Tap unter `/opt/homebrew/Library/Taps/voydz/homebrew-tap/Formula/fithit.rb`. Vor dem Publish bitte `homepage`, `url` und `sha256` anpassen.
+Die Formel liegt im Tap unter `homebrew-tap/Formula/fithit.rb`.  
+Vor dem Publish bitte `homepage`, `url` und `sha256` anpassen.
 
 ## Skill Integration
 
