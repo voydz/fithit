@@ -1,0 +1,61 @@
+[
+  {
+    "category": "Yoga",
+    "duration": "20 min",
+    "trainer": "Dustin",
+    "episode": 123,
+    "name": "Hip Opener Flow",
+    "description": "Deep hip opener sequence",
+    "equipment": ["Yoga Mat"],
+    "flow_style": "Slow",
+    "body_focus": "Total Body"
+  },
+  {
+    "category": "Strength",
+    "duration": "30 min",
+    "trainer": "Kim",
+    "episode": 45,
+    "name": "Upper Body Strength",
+    "description": "Arms and shoulders",
+    "equipment": ["Dumbbells", "Mat"],
+    "body_focus": ["Upper Body", "Arms"],
+    "dumbbells": "Medium"
+  },
+  {
+    "category": "Core",
+    "duration": "10 min",
+    "trainer": "Sam",
+    "episode": 5,
+    "name": "Quick Core",
+    "description": "Fast core burn",
+    "equipment": "No Equipment"
+  },
+  {
+    "category": "Mindful Cooldown",
+    "duration": "5 min",
+    "trainer": "Dustin",
+    "episode": 7,
+    "name": "Relax",
+    "description": "Wind down",
+    "equipment": null
+  },
+  {
+    "category": "HIIT",
+    "duration": "20 min",
+    "trainer": "Jamie",
+    "episode": 11,
+    "name": "Sweat",
+    "description": "Intervals",
+    "dumbbells": "Light"
+  },
+  {
+    "category": "Pilates",
+    "duration": "30 min",
+    "trainer": "Marimba",
+    "episode": 22,
+    "name": "Bands",
+    "description": "Band work",
+    "resistance_band": "Yes",
+    "equipment": ["Resistance Band"]
+  }
+]
