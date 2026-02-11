@@ -7,7 +7,7 @@ setup:
 	uv sync --extra dev
 
 run:
-	uv run python src/fithitcli/__main__.py
+	uv run fithit
 
 lint:
 	uv run ruff check src/
