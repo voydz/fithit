@@ -1,23 +1,17 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_all
 
-hiddenimports = []
-hiddenimports += collect_submodules("rich._unicode_data")
-
-# PyInstaller does not reliably bundle Rich unicode tables with hyphenated
-# module names. Collect them as data files so importlib can find them.
 datas = []
-datas += collect_data_files(
-    "rich._unicode_data",
-    include_py_files=True,
-    includes=["unicode*-*-*.py"],
-)
+binaries = []
+hiddenimports = []
+tmp_ret = collect_all('rich')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
     ['src/fithitcli/__main__.py'],
     pathex=[],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],

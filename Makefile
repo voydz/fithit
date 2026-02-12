@@ -23,7 +23,12 @@ test:
 check: lint test
 
 build:
-	uv run pyinstaller fithit.spec
+	uv run pyinstaller \
+		--onefile \
+		--name fithit \
+		--target-arch arm64 \
+		--collect-all rich \
+		src/fithitcli/__main__.py
 
 package: build
 	@set -e; \

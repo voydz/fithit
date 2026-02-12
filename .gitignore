@@ -19,7 +19,6 @@ htmlcov/
 .uv/
 
 *.spec
-!fithit.spec
 
 .DS_Store
 .idea/

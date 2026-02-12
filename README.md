@@ -1,5 +1,8 @@
 # fithit
 
+[![Release](https://img.shields.io/github/v/release/voydz/fithit)](https://github.com/voydz/fithit/releases)
+[![Homebrew Tap](https://img.shields.io/badge/homebrew-voydz%2Fhomebrew--tap-blue?logo=homebrew)](https://github.com/voydz/homebrew-tap)
+
 **CLI for parsing and searching Apple Fitness+ workouts.**  
 Fast, deterministic, and ideal for scripts, notebooks, or a personal training database.
 
@@ -9,6 +12,21 @@ Fast, deterministic, and ideal for scripts, notebooks, or a personal training da
 - Search like the original script (`filter_workouts.py`), but as a CLI
 - JSON output for automations and skills
 - Validation for stable public schemas
+
+## Installation
+
+```bash
+brew install voydz/tap/fithit
+```
+
+Or install from source with [uv](https://docs.astral.sh/uv/):
+
+```bash
+git clone https://github.com/voydz/fithit.git
+cd fithit
+uv sync
+uv run fithit --help
+```
 
 ## Quickstart (dev)
 
@@ -64,7 +82,7 @@ make test
 
 ## Homebrew (Tap)
 
-The formula lives in the tap at `homebrew-tap/Formula/fithit.rb`.  
+The tap repo is `voydz/homebrew-tap`, and the formula lives at `Formula/fithit.rb`.  
 Before publishing, update `homepage`, `url`, and `sha256`.
 
 ## Skill Integration
