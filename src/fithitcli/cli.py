@@ -17,6 +17,14 @@ app = typer.Typer(
 console = Console()
 
 
+@app.callback(invoke_without_command=True)
+def _main(ctx: typer.Context) -> None:
+    """Show help when no command is provided."""
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit(code=0)
+
+
 @app.command("search")
 def _search(
     category: str | None = typer.Option(

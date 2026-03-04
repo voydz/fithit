@@ -12,6 +12,13 @@ FIXTURE_PATH = Path(__file__).parent / "fixtures" / "workouts.sample.json"
 runner = CliRunner()
 
 
+def test_cli_no_args_shows_help():
+    result = runner.invoke(app, [])
+    assert result.exit_code == 0
+    assert "Usage:" in result.stdout
+    assert "fithit" in result.stdout
+
+
 def test_cli_info_json(monkeypatch):
     monkeypatch.setenv("FITHIT_DB_PATH", str(FIXTURE_PATH))
     result = runner.invoke(app, ["info", "--format", "json"])

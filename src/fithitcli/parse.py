@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import concurrent.futures
 import json
 import os
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 import zipfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import typer
 from rich.console import Console
@@ -23,6 +28,10 @@ RELEVANT_TABLES = [
     "Mindful Cooldown",
     "Meditation",
 ]
+LINK_CHECK_TIMEOUT_SECONDS = 10
+LINK_CHECK_MAX_WORKERS = 16
+LINK_CHECK_RETRIES = 2
+RETRYABLE_HTTP_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
 def _default_db_path() -> Path:
@@ -36,6 +45,136 @@ def _default_db_path() -> Path:
         else (Path.home() / ".local" / "share")
     )
     return base / "fithit" / "workouts.json"
+
+
+def _extract_link_value(row: dict[str, Any], link_keys: list[str]) -> str | None:
+    for key in link_keys:
+        raw = row.get(key)
+        if isinstance(raw, str):
+            link = raw.strip()
+            if link:
+                return link
+        elif isinstance(raw, dict):
+            link = str(raw.get("text") or raw.get("link") or "").strip()
+            if link:
+                return link
+    return None
+
+
+def _check_link_works(link: str, timeout: int) -> bool:
+    parsed = urllib.parse.urlparse(link)
+    if parsed.scheme.lower() not in {"http", "https"}:
+        # Unsupported schemes cannot be checked via urllib HTTP requests.
+        return True
+
+    attempts = LINK_CHECK_RETRIES + 1
+    for attempt in range(attempts):
+        req = urllib.request.Request(link, headers={"User-Agent": "fithit-cli"})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                status = getattr(resp, "status", None) or resp.getcode()
+                if isinstance(status, int) and status >= 400:
+                    if (
+                        status in RETRYABLE_HTTP_STATUS_CODES
+                        and attempt < LINK_CHECK_RETRIES
+                    ):
+                        time.sleep(0.25 * (2**attempt))
+                        continue
+                    return False
+                return True
+        except urllib.error.HTTPError as exc:
+            if (
+                exc.code in RETRYABLE_HTTP_STATUS_CODES
+                and attempt < LINK_CHECK_RETRIES
+            ):
+                time.sleep(0.25 * (2**attempt))
+                continue
+            return False
+        except urllib.error.URLError:
+            if attempt < LINK_CHECK_RETRIES:
+                time.sleep(0.25 * (2**attempt))
+                continue
+            return False
+        except ValueError:
+            return False
+
+    return False
+
+
+def _validate_links(
+    links: set[str],
+    *,
+    timeout: int,
+    checker: Callable[[str, int], bool],
+) -> dict[str, bool]:
+    results: dict[str, bool] = {}
+    if not links:
+        return results
+
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=min(max(len(links), 1), LINK_CHECK_MAX_WORKERS)
+    ) as executor:
+        futures = {executor.submit(checker, link, timeout): link for link in links}
+        for future in concurrent.futures.as_completed(futures):
+            link = futures[future]
+            try:
+                results[link] = bool(future.result())
+            except Exception:
+                results[link] = False
+    return results
+
+
+def _filter_unreachable_link_rows(
+    content: dict[str, Any],
+    *,
+    timeout: int = LINK_CHECK_TIMEOUT_SECONDS,
+    checker: Callable[[str, int], bool] = _check_link_works,
+) -> tuple[int, int]:
+    prepared_tables: list[tuple[dict[str, Any], list[tuple[dict[str, Any], str | None]]]] = (
+        []
+    )
+    unique_links: set[str] = set()
+
+    for table in content.get("tables", []):
+        if table.get("name") not in RELEVANT_TABLES:
+            continue
+
+        link_keys = [
+            col.get("key")
+            for col in table.get("columns", [])
+            if str(col.get("name", "")).strip().lower() == "link"
+            and isinstance(col.get("key"), str)
+        ]
+        if not link_keys:
+            continue
+
+        rows = table.get("rows", [])
+        if not isinstance(rows, list):
+            continue
+
+        row_links: list[tuple[dict[str, Any], str | None]] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            link = _extract_link_value(row, link_keys)
+            if link:
+                unique_links.add(link)
+            row_links.append((row, link))
+        prepared_tables.append((table, row_links))
+
+    link_status = _validate_links(unique_links, timeout=timeout, checker=checker)
+
+    removed_rows = 0
+    for table, row_links in prepared_tables:
+        kept_rows: list[dict[str, Any]] = []
+        for row, link in row_links:
+            if link and not link_status.get(link, False):
+                removed_rows += 1
+                continue
+            kept_rows.append(row)
+        table["rows"] = kept_rows
+
+    return len(unique_links), removed_rows
 
 
 def build_option_map(columns: list[dict[str, Any]]):
@@ -212,6 +351,13 @@ def parse_content(*, content: dict[str, Any], source: str, output: str | None) -
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     console.print(f"Parsing: {source}")
+    checked_links, removed_rows = _filter_unreachable_link_rows(content)
+    if checked_links:
+        console.print(
+            f"Link-Check: {checked_links} URL(s) geprüft, {removed_rows} Workout(s) entfernt."
+        )
+    else:
+        console.print("Link-Check: keine Links gefunden.")
 
     all_workouts: list[dict[str, Any]] = []
     stats: dict[str, int] = {}

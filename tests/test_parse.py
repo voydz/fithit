@@ -4,6 +4,7 @@ import json
 import zipfile
 from pathlib import Path
 
+import fithitcli.parse as parse_module
 from fithitcli.parse import parse_cmd
 
 
@@ -57,7 +58,12 @@ def _fake_dtable(path: Path) -> Path:
     return dtable_path
 
 
-def test_parse_cmd_outputs_json(tmp_path: Path):
+def test_parse_cmd_outputs_json(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr(
+        parse_module,
+        "_filter_unreachable_link_rows",
+        lambda content: (0, 0),
+    )
     dtable_path = _fake_dtable(tmp_path)
     output_path = tmp_path / "workouts.json"
 
