@@ -1,0 +1,32 @@
+class Fithit < Formula
+  desc "CLI zum Parsen und Durchsuchen von Apple Fitness+ Workouts"
+  homepage "https://github.com/voydz/fithit"
+  version "@VERSION@"
+
+  on_macos do
+    # Only Apple Silicon binaries are published.
+    depends_on arch: :arm64
+
+    url "https://github.com/voydz/fithit/releases/download/v@VERSION@/fithit-cli-@VERSION@-macos-arm64.tar.gz"
+    sha256 "@SHA256_MACOS_ARM64@"
+  end
+
+  on_linux do
+    on_arm do
+      url "https://github.com/voydz/fithit/releases/download/v@VERSION@/fithit-cli-@VERSION@-linux-arm64.tar.gz"
+      sha256 "@SHA256_LINUX_ARM64@"
+    end
+    on_intel do
+      url "https://github.com/voydz/fithit/releases/download/v@VERSION@/fithit-cli-@VERSION@-linux-x86_64.tar.gz"
+      sha256 "@SHA256_LINUX_X86_64@"
+    end
+  end
+
+  def install
+    bin.install "fithit"
+  end
+
+  test do
+    assert_match "fithit", shell_output("#{bin}/fithit --help")
+  end
+end

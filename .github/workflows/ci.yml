@@ -26,3 +26,25 @@ jobs:
 
       - name: Test
         run: make test
+
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-14, ubuntu-22.04, ubuntu-22.04-arm]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Setup project
+        run: |
+          uv python install 3.13
+          make setup
+
+      - name: Build and smoke test binary
+        run: make smoke

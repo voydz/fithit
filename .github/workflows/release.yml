@@ -6,13 +6,26 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
-  build-and-bump-tap:
-    runs-on: macos-14  # Apple Silicon runner
-    env:
-      HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14 # Apple Silicon
+            os: macos
+            arch: arm64
+          # Built on 22.04, not 24.04, on purpose: PyInstaller binaries are only
+          # forward-compatible w.r.t. glibc. The 22.04 output is verified to run
+          # on glibc 2.28+ (Rocky 8, Debian 11, Ubuntu 20.04+).
+          - runner: ubuntu-22.04
+            os: linux
+            arch: x86_64
+          - runner: ubuntu-22.04-arm
+            os: linux
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
 
@@ -35,28 +48,70 @@ jobs:
       - name: Package tarball
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          TAR="fithit-cli-${VERSION}-macos.tar.gz"
-          tar -czf "$TAR" -C dist fithit
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          TAR="fithit-cli-${VERSION}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz"
+          # COPYFILE_DISABLE keeps macOS tar from embedding AppleDouble xattrs.
+          COPYFILE_DISABLE=1 tar -czf "$TAR" -C dist fithit
           echo "TAR=$TAR" >> "$GITHUB_ENV"
 
       - name: Compute sha256
         run: |
-          SHA256=$(shasum -a 256 "$TAR" | awk '{print $1}')
-          echo "SHA256=$SHA256" >> "$GITHUB_ENV"
+          if command -v sha256sum >/dev/null 2>&1; then
+            SHA256=$(sha256sum "$TAR" | awk '{print $1}')
+          else
+            SHA256=$(shasum -a 256 "$TAR" | awk '{print $1}')
+          fi
+          echo "$SHA256" > "sha256-${{ matrix.os }}-${{ matrix.arch }}.txt"
 
       - name: Upload release asset
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload "$GITHUB_REF_NAME" "$TAR" --clobber
+        run: gh release upload "$GITHUB_REF_NAME" "$TAR" --clobber
 
-      - name: Bump tap formula
+      - name: Share checksum with tap job
+        uses: actions/upload-artifact@v4
+        with:
+          name: sha256-${{ matrix.os }}-${{ matrix.arch }}
+          path: sha256-${{ matrix.os }}-${{ matrix.arch }}.txt
+
+  bump-tap:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download checksums
+        uses: actions/download-artifact@v4
+        with:
+          pattern: sha256-*
+          merge-multiple: true
+          path: checksums
+
+      - name: Render formula and open tap PR
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
         run: |
-          URL="https://github.com/voydz/fithit/releases/download/${GITHUB_REF_NAME}/${TAR}"
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          brew tap voydz/homebrew-tap
-          brew bump-formula-pr voydz/tap/fithit \
-            --url "$URL" \
-            --sha256 "$SHA256"
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          BRANCH="bump-fithit-${VERSION}"
+
+          git clone --depth 1 \
+            "https://x-access-token:${GH_TOKEN}@github.com/voydz/homebrew-tap.git" tap
+          git -C tap config user.name "github-actions[bot]"
+          git -C tap config user.email "github-actions[bot]@users.noreply.github.com"
+          git -C tap checkout -b "$BRANCH"
+
+          sed \
+            -e "s/@VERSION@/${VERSION}/g" \
+            -e "s/@SHA256_MACOS_ARM64@/$(cat checksums/sha256-macos-arm64.txt)/" \
+            -e "s/@SHA256_LINUX_ARM64@/$(cat checksums/sha256-linux-arm64.txt)/" \
+            -e "s/@SHA256_LINUX_X86_64@/$(cat checksums/sha256-linux-x86_64.txt)/" \
+            packaging/fithit.rb.tmpl > tap/Formula/fithit.rb
+
+          git -C tap commit -am "fithit ${VERSION}"
+          git -C tap push origin "$BRANCH"
+
+          gh pr create \
+            --repo voydz/homebrew-tap \
+            --head "$BRANCH" \
+            --title "fithit ${VERSION}" \
+            --body "Automated bump for [fithit ${GITHUB_REF_NAME}](https://github.com/voydz/fithit/releases/tag/${GITHUB_REF_NAME}). Builds: macOS arm64, Linux arm64, Linux x86_64."
