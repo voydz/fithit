@@ -2,6 +2,29 @@
 
 .DEFAULT_GOAL := check
 
+# Release artifacts are named fithit-cli-<version>-<os>-<arch>.tar.gz.
+# The binary is always built for the host platform; cross-compiling is not
+# supported by PyInstaller, so each target gets its own CI runner.
+UNAME_S := $(shell uname -s)
+UNAME_M := $(shell uname -m)
+
+ifeq ($(UNAME_S),Darwin)
+	TARGET_OS := macos
+	SHA256 := shasum -a 256
+else
+	TARGET_OS := linux
+	SHA256 := sha256sum
+endif
+
+ifneq ($(filter $(UNAME_M),arm64 aarch64),)
+	TARGET_ARCH := arm64
+else
+	TARGET_ARCH := x86_64
+endif
+
+VERSION ?= $(shell grep '^version' pyproject.toml | head -1 | cut -d'"' -f2)
+TARBALL := fithit-cli-$(VERSION)-$(TARGET_OS)-$(TARGET_ARCH).tar.gz
+
 setup:
 	uv venv
 	uv sync --extra dev
@@ -23,20 +46,14 @@ test:
 check: lint test
 
 build:
-	uv run pyinstaller \
-		--onefile \
-		--name fithit \
-		--target-arch arm64 \
-		--collect-all rich \
-		src/fithitcli/__main__.py
+	uv run pyinstaller --clean --noconfirm fithit.spec
 
 package: build
 	@set -e; \
-	VERSION=$$(grep '^version' pyproject.toml | head -1 | cut -d'"' -f2); \
-	echo "Packaging fithit v$$VERSION..."; \
+	echo "Packaging fithit v$(VERSION) for $(TARGET_OS)/$(TARGET_ARCH)..."; \
 	cd dist && \
-	tar -czf "fithit-cli-$$VERSION-macos.tar.gz" fithit && \
-	shasum -a 256 "fithit-cli-$$VERSION-macos.tar.gz"
+	COPYFILE_DISABLE=1 tar -czf "$(TARBALL)" fithit && \
+	$(SHA256) "$(TARBALL)"
 
 smoke: build
 	@set -e; \

@@ -19,6 +19,18 @@ Fast, deterministic, and ideal for scripts, notebooks, or a personal training da
 brew install voydz/tap/fithit
 ```
 
+Works with Homebrew on macOS and with Homebrew on Linux (Linuxbrew). Prebuilt
+binaries are published for:
+
+| Platform | Architecture |
+| --- | --- |
+| macOS | `arm64` (Apple Silicon) |
+| Linux | `x86_64`, `arm64` |
+
+Intel Macs are not covered by a prebuilt binary — install from source there.
+The Linux binaries are built on Ubuntu 22.04 and verified to run on glibc 2.28
+and newer (tested on Rocky Linux 8, Debian 11, Ubuntu 20.04/22.04).
+
 Or install from source with [uv](https://docs.astral.sh/uv/):
 
 ```bash
@@ -82,8 +94,18 @@ make test
 
 ## Homebrew (Tap)
 
-The tap repo is `voydz/homebrew-tap`, and the formula lives at `Formula/fithit.rb`.  
-Before publishing, update `homepage`, `url`, and `sha256`.
+The tap repo is `voydz/homebrew-tap`, and the formula lives at `Formula/fithit.rb`.
+
+The formula is generated, not hand-edited: `packaging/fithit.rb.tmpl` in this
+repo is the source of truth. On a published release, `.github/workflows/release.yml`
+builds one binary per platform, uploads the tarballs as release assets, renders
+the template with the three checksums, and opens a PR against the tap.
+
+To package locally for the host platform only:
+
+```bash
+make package
+```
 
 ## Skill Integration
 

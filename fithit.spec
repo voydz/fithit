@@ -39,7 +39,7 @@ exe = EXE(
     console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
-    target_arch='arm64',
+    target_arch=None,  # build for the host arch; see Makefile
     codesign_identity=None,
     entitlements_file=None,
 )
