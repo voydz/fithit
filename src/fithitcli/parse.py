@@ -83,10 +83,7 @@ def _check_link_works(link: str, timeout: int) -> bool:
                     return False
                 return True
         except urllib.error.HTTPError as exc:
-            if (
-                exc.code in RETRYABLE_HTTP_STATUS_CODES
-                and attempt < LINK_CHECK_RETRIES
-            ):
+            if exc.code in RETRYABLE_HTTP_STATUS_CODES and attempt < LINK_CHECK_RETRIES:
                 time.sleep(0.25 * (2**attempt))
                 continue
             return False
@@ -130,9 +127,9 @@ def _filter_unreachable_link_rows(
     timeout: int = LINK_CHECK_TIMEOUT_SECONDS,
     checker: Callable[[str, int], bool] = _check_link_works,
 ) -> tuple[int, int]:
-    prepared_tables: list[tuple[dict[str, Any], list[tuple[dict[str, Any], str | None]]]] = (
-        []
-    )
+    prepared_tables: list[
+        tuple[dict[str, Any], list[tuple[dict[str, Any], str | None]]]
+    ] = []
     unique_links: set[str] = set()
 
     for table in content.get("tables", []):
